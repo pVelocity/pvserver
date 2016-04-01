@@ -82,7 +82,7 @@ rl.question('Host URL (e.g. http://xxxx.pvelocity.com): ', (answer) => {
                 userid = answer;
                 rl.question('Password: ', (answer) => {
                     if (answer) {
-                        var pv = require('./pvserver');
+                        var pv = require('../');
                         passwd = answer;
 
                         // Login into the server
