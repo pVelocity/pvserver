@@ -1,0 +1,29 @@
+{
+  "name": "pvserver",
+  "version": "0.1.0",
+  "description": "",
+  "main": "pvserver.js",
+  "scripts": {
+    "test": "echo \"There are currently no tests\" && exit 0"
+  },
+  "keywords": [
+    "pVelocity",
+    "CRM",
+    "OLAP",
+    "BI"
+  ],
+  "author": "Kang Lu <kang.lu@pvelocity.com> (http://www.pvelocity.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pVelocity/pvserver.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pVelocity/pvserver/issues"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "http": "0.0.0",
+    "https": "^1.0.0",
+    "querystring": "^0.2.0"
+  }
+}
