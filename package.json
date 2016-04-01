@@ -1,10 +1,10 @@
 {
   "name": "pvserver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "pvserver.js",
   "scripts": {
-    "test": "echo \"There are currently no tests\" && exit 0"
+    "test": "echo \"Please checkout the test directory.\" && exit 0"
   },
   "keywords": [
     "pVelocity",
