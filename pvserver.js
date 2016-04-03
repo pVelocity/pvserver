@@ -3,6 +3,8 @@
 /*globals Buffer: true, require: true, module: true */
 
 var prom = require('bluebird');
+var qs = require('querystring');
+var FormData = require('form-data');
 
 //Get the header for an RPM API XML request as an array with optional sessionId inclusion.
 var getXmlReqHeader = function() {
@@ -41,12 +43,10 @@ function PVServerAPI(urlString) {
 
     this.user = null;
     this.role = null;
-    this.hostName = "localhost";
-    this.hostPort = 80;
-    this.urlPath = "/RPM";
-    this.urlScheme = "http";
-    this.http = (this.urlScheme === 'http' ? require('http') : require('https'));
-    this.querystring = require('querystring');
+
+    if (!urlString) {
+        urlString = "http://localhost";
+    }
 
     this.configPath = "/PE/DKC/";
 
@@ -65,9 +65,7 @@ function PVServerAPI(urlString) {
         W: "lb"
     };
 
-    if (urlString) {
-        this.setHostURL(urlString);
-    }
+    this.setHostURL(urlString);
 }
 
 function PVServerError(code, status, json) {
@@ -137,7 +135,7 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
     var server = this;
     var requestStr = buildXmlReqStr.call(server, operation, parameters);
 
-    var post_data = this.querystring.stringify({
+    var post_data = qs.stringify({
         "dataformat": "json",
         "request": requestStr
     });
@@ -204,6 +202,7 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
 };
 PVServerAPI.prototype.sendRequest = prom.promisify(PVServerAPI.prototype.sendRequestAsync);
 
+
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
     var params = ['<User>', user, '</User>'];
@@ -241,5 +240,6 @@ PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
 
 module.exports = {
     'PVServerAPI': PVServerAPI,
-    'PVServerError': PVServerError
+    'PVServerError': PVServerError,
+    'PVFormData' : FormData
 };
