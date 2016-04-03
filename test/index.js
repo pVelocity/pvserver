@@ -27,82 +27,49 @@ var queryParams = ['<Currency>USD</Currency>',
     '</SearchCriteria>'
 ].join("");
 
-var doWork = function(err, json) {
+var mainFunc = function(userid, passwd, url) {
+    var pvserver = require('../');
+    var pv = new pvserver(url);
+    pv.login(userid, passwd, null).
+    then(function(json) {
 
-    if (!this.isOkay(err)) {
-        console.log("Login Failed.");
-        return;
-    }
+        return pv.sendRequest('Query', queryParams);
 
-    console.log(JSON.stringify(json));
+    }).
+    then(function(json) {
 
-    this.sendRequestAsync('Query', queryParams, function(err, json) {
+        console.log(JSON.stringify(json));
+        return pv.logout();
+    }).
+    then(function(json) {
 
         console.log(JSON.stringify(json));
 
-        if (this.isOkay(err)) {
-
-            this.logout(function(err, json) {
-
-                console.log(JSON.stringify(json));
-
-                // Invalid session test
-                this.sendRequestAsync('Query', queryParams, function(err, json) {
-                    console.log(JSON.stringify(json));
-                    if (err === "RPM_PE_INVALID_SESSION") {
-                        console.log("Test Successful.");
-                    } else {
-                        console.log("Test Failed.");
-                    }
-                });
-            });
-
+        // Invalid session test
+        return pv.sendRequest('Query', queryParams);
+    }).
+    then(function(json) {
+        console.log(JSON.stringify(json));
+        console.log("Test Failed.");
+        process.exit(0);
+    }).
+    catch(function(err) {
+        console.log(`Error: ${err.message}`);
+        if (err.message === "RPM_PE_INVALID_SESSION") {
+            console.log("Test Successful.");
         } else {
-            console.log("Query Failed.");
+            console.log("Test Failed.");
         }
+        process.exit(0);
     });
 };
 
-const readline = require('readline');
+var nodename = process.argv[0].replace(/^.*[/]/, '');
+var procname = process.argv[1].replace(/^.*[/]/, '');
+var args = process.argv.slice(2);
+if (args.length != 3) {
+    console.log(`usage: ${nodename} ${procname} hosturl userid password`);
+    process.exit(1);
+}
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-var userid = null;
-var passwd = null;
-var hostname = null;
-
-rl.question('Host URL (e.g. http://xxxx.pvelocity.com): ', (answer) => {
-    if (answer) {
-        hostname = answer;
-        rl.question('User Id: ', (answer) => {
-            if (answer) {
-                userid = answer;
-                rl.question('Password: ', (answer) => {
-                    if (answer) {
-                        var pv = require('../');
-                        passwd = answer;
-
-                        // Login into the server
-                        pv.setHostURL(hostname);
-                        pv.login(userid, passwd, null, doWork.bind(pv));
-                    } else {
-                        console.log('Password is required.');
-                    }
-                    rl.close();
-                });
-            } else {
-                console.log('User Id is required.');
-                process.exit(1);
-                rl.close();
-            }
-        });
-    } else {
-        console.log('Host is required.');
-        process.exit(1);
-        rl.close();
-
-    }
-});
+mainFunc(args[1], args[2], args[0]);

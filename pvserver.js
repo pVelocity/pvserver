@@ -2,6 +2,8 @@
 
 /*globals Buffer: true, require: true, module: true */
 
+var Promise = require('bluebird');
+
 //Get the header for an RPM API XML request as an array with optional sessionId inclusion.
 var getXmlReqHeader = function() {
     var reqHeader = ['<?xml version="1.0" encoding="utf-8"?>',
@@ -35,7 +37,7 @@ var buildXmlReqStr = function(operation, parameters) {
     return req.join('');
 };
 
-function PVServerAPI() {
+function PVServerAPI(urlString) {
 
     this.user = null;
     this.role = null;
@@ -62,6 +64,10 @@ function PVServerAPI() {
         T: "Hr",
         W: "lb"
     };
+
+    if (urlString) {
+        this.setHostURL(urlString);
+    }
 }
 
 PVServerAPI.prototype.setHostURL = function(urlString) {
@@ -100,18 +106,6 @@ PVServerAPI.prototype.setHostURL = function(urlString) {
  */
 PVServerAPI.prototype.isOkay = function(code) {
     return (code === "RPM_PE_STATUS_OK");
-};
-
-PVServerAPI.prototype.isStatusOkay = function(status) {
-    return ((status && status.Code) ? this.isOkay(status.Code.text) : false);
-};
-
-PVServerAPI.prototype.isJsonOkay = function(json) {
-    var status = null;
-    if (json && json.PVResponse) {
-        status = json.PVResponse.PVStatus;
-    }
-    return this.isStatusOkay(status);
 };
 
 /**
@@ -169,13 +163,15 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
                     json = data;
                 }
                 var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
-                if (server.isStatusOkay(status)) {
+                var code = (status && status.Code) ? status.Code.text : null;
+                if (server.isOkay(code)) {
                     server.sessionId = status.SessionId.text;
                     if (operation === 'Login' && res.headers['set-cookie']) {
                         server.cookie = res.headers['set-cookie'];
                     }
+                    code = null;
                 }
-                completionCallback.call(server, status ? status.Code.text : null, json);
+                completionCallback.call(server, code, json);
             });
         }
     );
@@ -183,8 +179,9 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
     post.write(post_data);
     post.end();
 };
+PVServerAPI.prototype.sendRequest = Promise.promisify(PVServerAPI.prototype.sendRequestAsync);
 
-PVServerAPI.prototype.login = function(user, password, credKey, completionCallback) {
+PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
     var params = ['<User>', user, '</User>'];
     if (password) {
@@ -196,14 +193,16 @@ PVServerAPI.prototype.login = function(user, password, credKey, completionCallba
     params.push('<TimeOut>', this.timeOut.toString(), '</TimeOut>');
     params.push('<DeviceName>', this.device, '</DeviceName>');
 
-    this.sendRequestAsync("Login", params.join(""), function(err, json) {
-        if (this.isOkay(err)) {
-            this.user = json.PVResponse.PVStatus.User.text;
-            this.role = json.PVResponse.PVStatus.UserGroup.text;
-        }
-        completionCallback.call(this, err, json);
+    var server = this;
+    server.sendRequest("Login", params.join("")).then(function(json) {
+        server.user = json.PVResponse.PVStatus.User.text;
+        server.role = json.PVResponse.PVStatus.UserGroup.text;
+        completionCallback.call(this, null, json);
+    }).catch(function(err) {
+        completionCallback.call(this, err, null);
     });
 };
+PVServerAPI.prototype.login = Promise.promisify(PVServerAPI.prototype.loginAsync);
 
 PVServerAPI.prototype.logout = function(completionCallback) {
 
@@ -215,15 +214,6 @@ PVServerAPI.prototype.logout = function(completionCallback) {
         completionCallback.call(this, err, json);
     });
 };
+PVServerAPI.prototype.logout = Promise.promisify(PVServerAPI.prototype.logout);
 
-var privateServer = new PVServerAPI();
-
-// Only export what we want
-
-module.exports = {
-    setHostURL: privateServer.setHostURL.bind(privateServer),
-    isOkay: privateServer.isOkay.bind(privateServer),
-    sendRequestAsync: privateServer.sendRequestAsync.bind(privateServer),
-    login: privateServer.login.bind(privateServer),
-    logout: privateServer.logout.bind(privateServer)
-};
+module.exports = PVServerAPI;
