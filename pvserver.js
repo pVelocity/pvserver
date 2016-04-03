@@ -2,7 +2,7 @@
 
 /*globals Buffer: true, require: true, module: true */
 
-var Promise = require('bluebird');
+var prom = require('bluebird');
 
 //Get the header for an RPM API XML request as an array with optional sessionId inclusion.
 var getXmlReqHeader = function() {
@@ -70,6 +70,19 @@ function PVServerAPI(urlString) {
     }
 }
 
+function PVServerError(code, status, json) {
+    if (this) {
+        this.code = code;
+        this.status = status;
+        this.json = json;
+    }
+    return true;
+}
+
+PVServerError.prototype.message = function() {
+    return (this.status && this.status.Message && this.status.Message) ? this.status.Message.text : 'No relevant message';
+};
+
 PVServerAPI.prototype.setHostURL = function(urlString) {
     var refUrl = urlString;
     if (typeof urlString === "string") {
@@ -94,7 +107,7 @@ PVServerAPI.prototype.setHostURL = function(urlString) {
         server.hostPort = 80;
     }
     server.hostPort = refUrl.port || server.hostPort;
-}
+};
 
 /**
  * Given a JSON response object, determine if the result status is okay or not
@@ -151,6 +164,7 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
         function(res) {
             res.setEncoding('utf8');
             var data = "";
+            var code = null;
             res.on('data', function(chunk) {
                 data += chunk;
 
@@ -163,23 +177,32 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
                     json = data;
                 }
                 var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
-                var code = (status && status.Code) ? status.Code.text : null;
+                code = (status && status.Code) ? status.Code.text : null;
                 if (server.isOkay(code)) {
                     server.sessionId = status.SessionId.text;
                     if (operation === 'Login' && res.headers['set-cookie']) {
                         server.cookie = res.headers['set-cookie'];
                     }
                     code = null;
+                } else {
+                    code = new PVServerError(code, status, json);
                 }
                 completionCallback.call(server, code, json);
+            });
+            res.on('error', function(err) {
+                completionCallback.call(server, err, null);
             });
         }
     );
 
+    post.on('error', function(err) {
+        completionCallback.call(server, err, null);
+    });
+
     post.write(post_data);
     post.end();
 };
-PVServerAPI.prototype.sendRequest = Promise.promisify(PVServerAPI.prototype.sendRequestAsync);
+PVServerAPI.prototype.sendRequest = prom.promisify(PVServerAPI.prototype.sendRequestAsync);
 
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
@@ -202,7 +225,7 @@ PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionC
         completionCallback.call(this, err, null);
     });
 };
-PVServerAPI.prototype.login = Promise.promisify(PVServerAPI.prototype.loginAsync);
+PVServerAPI.prototype.login = prom.promisify(PVServerAPI.prototype.loginAsync);
 
 PVServerAPI.prototype.logout = function(completionCallback) {
 
@@ -214,6 +237,9 @@ PVServerAPI.prototype.logout = function(completionCallback) {
         completionCallback.call(this, err, json);
     });
 };
-PVServerAPI.prototype.logout = Promise.promisify(PVServerAPI.prototype.logout);
+PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
 
-module.exports = PVServerAPI;
+module.exports = {
+    'PVServerAPI': PVServerAPI,
+    'PVServerError': PVServerError
+};
