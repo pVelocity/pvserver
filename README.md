@@ -28,7 +28,7 @@ For a more detail account of our solution, please visit us at [www.pvelocity.com
 
 Install the ``pvserver`` module.
 
-	npm install --save pvserver
+    npm install --save pvserver
 
 Use the require statement to load the module.
 
@@ -45,14 +45,14 @@ var pv = new pvserver.PVServerAPI("http://domain.com");
 All RPM API requests must be preceded by a successful login. Below is an example flow of how to perform a login and then followed by a simple query.
 
 ```js
-	pv.login("demoUser", "password", null).
-	then(function(json) {
-	
+    pv.login("demoUser", "password", null).
+    then(function(json) {
+
         console.log(`Result: ${JSON.stringify(json)}\n`);
-        
-		// Query order margins related to industries
-		
-    	var queryParamsJson = {
+
+        // Query order margins related to industries
+
+        var queryParamsJson = {
             'Currency': 'USD',
             'ProfitModel': 'PipelineProduct',
             'Category': 'Sales',
@@ -83,27 +83,27 @@ All RPM API requests must be preceded by a successful login. Below is an example
                 }
             }
         };
-                
+
         return pv.sendRequest('Query', queryParamsJson);
-    
+
     }).then(function(json) {
-    
-		// Print out the results and logout
+
+        // Print out the results and logout
         console.log(`Result: ${JSON.stringify(json)}\n`);
-        
-		return pv.logout();
-    	
+
+        return pv.logout();
+
     }).catch(pvserver.PVServerError, function(err) {
 
-		// Catches any errors returned from the application server
+        // Catches any errors returned from the application server
         console.log(`Unexpected Application Server Error:`);
         console.log(`${err.code}: ${err.message()}, ${JSON.stringify(err.status)}}`);
-            
+
     }).catch(function(err) {
-    
-		// Catches other node.js errors
+
+        // Catches other node.js errors
         console.log(`Unexpected Error: ${err.message}`);
-        
+
     });
 ```
 
