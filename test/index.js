@@ -4,7 +4,10 @@
 
 /*globals require: true */
 
+var fs = require('fs');
+
 var performQuery = function(pv) {
+    console.log('Performing a simple query...');
     return pv.sendRequest('Query', ['<Currency>USD</Currency>',
         '<ProfitModel>PipelineProduct</ProfitModel>',
         '<Category>Sales</Category>',
@@ -29,30 +32,41 @@ var performQuery = function(pv) {
     ].join(""));
 };
 
+var printResult = function(json) {
+    console.log(`Result: ${JSON.stringify(json)}\n`);
+};
+
 var mainFunc = function(userid, passwd, url) {
     var pvserver = require('../');
     var pv = new pvserver.PVServerAPI(url);
+
+    console.log('Logging in...');
     pv.login(userid, passwd, null).
-    then(function() {
-
-        return performQuery(pv);
-
+    then(function(json) {
+        printResult(json);
+        console.log('Uploading this sample script to the server...');
+        return pv.sendFormRequest('UploadFile', {
+            'file': fs.createReadStream('./index.js'),
+            'Persistent': 'true'
+        });
     }).
     then(function(json) {
-
-        console.log(JSON.stringify(json));
+        printResult(json);
+        return performQuery(pv);
+    }).
+    then(function(json) {
+        printResult(json);
+        console.log('Logging out...');
         return pv.logout();
     }).
     then(function(json) {
-
-        console.log(JSON.stringify(json));
-
-        // Invalid session test
+        printResult(json);
+        console.log('Performing a query with an invalid session...');
         return performQuery(pv);
     }).
     then(function(json) {
-        console.log(JSON.stringify(json));
         console.log("Test Failed -- should not reach here.");
+        printResult(json);
         process.exit(0);
     }).
     catch(pvserver.PVServerError, function(err) {

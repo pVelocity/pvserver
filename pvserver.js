@@ -4,7 +4,9 @@
 
 var prom = require('bluebird');
 var qs = require('querystring');
-var FormData = require('form-data');
+var formData = require('form-data');
+
+//====== Private Functions ====================================================================
 
 //Get the header for an RPM API XML request as an array with optional sessionId inclusion.
 var getXmlReqHeader = function() {
@@ -39,6 +41,96 @@ var buildXmlReqStr = function(operation, parameters) {
     return req.join('');
 };
 
+var setHostURL = function(urlString) {
+    var refUrl = urlString;
+    if (typeof urlString === "string") {
+        var url = require('url');
+        refUrl = url.parse(urlString);
+    }
+
+    var server = this;
+
+    server.hostName = refUrl.hostname || server.hostName;
+    server.urlPath = (refUrl.pathname || server.urlPath) + "/RPM";
+    server.urlPath = server.urlPath.replace("//", "/");
+    server.urlScheme = refUrl.protocol || server.urlScheme;
+    server.urlScheme = server.urlScheme.replace(":", "");
+
+    server.http = null;
+    if (server.urlScheme === 'https') {
+        server.http = require('https');
+        server.hostPort = 443;
+    } else {
+        server.http = require('http');
+        server.hostPort = 80;
+    }
+    server.hostPort = refUrl.port || server.hostPort;
+};
+
+var genHeaders = function(post_data) {
+    var headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(post_data),
+        'Connection': 'Keep-Alive',
+        'X-PVClient-Version': this.version,
+        "X-PVClient-Platform": this.device
+    };
+
+    if (this.cookie) {
+        headers.Cookie = this.cookie[0];
+    }
+
+    return headers;
+};
+
+var genRequestOptions = function(headers) {
+    return {
+        host: this.hostName,
+        port: this.hostPort,
+        path: this.urlPath,
+        method: 'POST',
+        headers: headers
+    };
+};
+
+var processResponse = function(res) {
+    var server = this.server;
+    var completionCallback = this.completionCallback;
+    var operation = this.operation;
+    var data = "";
+    var code = null;
+
+    res.setEncoding('utf8');
+
+    res.on('data', function(chunk) {
+        data += chunk;
+    });
+
+    res.on('end', function() {
+        var json = null;
+        try {
+            json = JSON.parse(data);
+        } catch (err) {
+            json = data;
+        }
+        var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
+        code = (status && status.Code) ? status.Code.text : null;
+        if (server.isOkay(code)) {
+            server.sessionId = status.SessionId.text;
+            if (operation === 'Login' && res.headers['set-cookie']) {
+                server.cookie = res.headers['set-cookie'];
+            }
+            code = null;
+        } else {
+            code = new PVServerError(code, status, json);
+        }
+        completionCallback.call(server, code, json);
+    });
+    res.on('error', function(err) {
+        completionCallback.call(server, err, null);
+    });
+};
+
 function PVServerAPI(urlString) {
 
     this.user = null;
@@ -65,7 +157,7 @@ function PVServerAPI(urlString) {
         W: "lb"
     };
 
-    this.setHostURL(urlString);
+    setHostURL.call(this, urlString);
 }
 
 function PVServerError(code, status, json) {
@@ -79,32 +171,6 @@ function PVServerError(code, status, json) {
 
 PVServerError.prototype.message = function() {
     return (this.status && this.status.Message && this.status.Message) ? this.status.Message.text : 'No relevant message';
-};
-
-PVServerAPI.prototype.setHostURL = function(urlString) {
-    var refUrl = urlString;
-    if (typeof urlString === "string") {
-        var url = require('url');
-        refUrl = url.parse(urlString);
-    }
-
-    var server = this;
-
-    server.hostName = refUrl.hostname || server.hostName;
-    server.urlPath = (refUrl.pathname || server.urlPath) + "/RPM";
-    server.urlPath = server.urlPath.replace("//", "/");
-    server.urlScheme = refUrl.protocol || server.urlScheme;
-    server.urlScheme = server.urlScheme.replace(":", "");
-
-    server.http = null;
-    if (server.urlScheme === 'https') {
-        server.http = require('https');
-        server.hostPort = 443;
-    } else {
-        server.http = require('http');
-        server.hostPort = 80;
-    }
-    server.hostPort = refUrl.port || server.hostPort;
 };
 
 /**
@@ -140,58 +206,14 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
         "request": requestStr
     });
 
-    var headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(post_data),
-        'Connection': 'Keep-Alive',
-        'X-PVClient-Version': this.version,
-        "X-PVClient-Platform": this.device
-    };
+    var headers = genHeaders.call(server, post_data);
+    var reqOptions = genRequestOptions.call(server, headers);
 
-    if (this.cookie) {
-        headers.Cookie = this.cookie[0];
-    }
-
-    var post = this.http.request({
-            host: this.hostName,
-            port: this.hostPort,
-            path: this.urlPath,
-            method: 'POST',
-            headers: headers
-        },
-        function(res) {
-            res.setEncoding('utf8');
-            var data = "";
-            var code = null;
-            res.on('data', function(chunk) {
-                data += chunk;
-
-            });
-            res.on('end', function() {
-                var json = null;
-                try {
-                    json = JSON.parse(data);
-                } catch (err) {
-                    json = data;
-                }
-                var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
-                code = (status && status.Code) ? status.Code.text : null;
-                if (server.isOkay(code)) {
-                    server.sessionId = status.SessionId.text;
-                    if (operation === 'Login' && res.headers['set-cookie']) {
-                        server.cookie = res.headers['set-cookie'];
-                    }
-                    code = null;
-                } else {
-                    code = new PVServerError(code, status, json);
-                }
-                completionCallback.call(server, code, json);
-            });
-            res.on('error', function(err) {
-                completionCallback.call(server, err, null);
-            });
-        }
-    );
+    var post = server.http.request(reqOptions, processResponse.bind({
+        "server": server,
+        "operation": operation,
+        "completionCallback": completionCallback
+    }));
 
     post.on('error', function(err) {
         completionCallback.call(server, err, null);
@@ -201,6 +223,45 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
     post.end();
 };
 PVServerAPI.prototype.sendRequest = prom.promisify(PVServerAPI.prototype.sendRequestAsync);
+
+PVServerAPI.prototype.sendFormRequestAsync = function(operation, parameters, completionCallback) {
+    var server = this;
+
+    var form = new formData();
+    form.append('SessionId', server.sessionId);
+    form.append('Operation', operation);
+    form.append('dataformat', 'json');
+
+    for (var key in parameters) {
+        if (parameters.hasOwnProperty(key)) {
+            form.append(key, parameters[key]);
+        }
+    }
+
+    var formOptions = {
+        host: server.hostName,
+        port: server.hostPort,
+        path: server.urlPath
+    };
+    if (server.cookie) {
+        formOptions.headers = {
+            'Cookie': server.cookie[0]
+        };
+    }
+
+    form.submit(formOptions, function(err, res) {
+        if (err) {
+            completionCallback.call(server, err, null);
+        } else {
+            processResponse.call({
+                "server": server,
+                "operation": operation,
+                "completionCallback": completionCallback
+            }, res);
+        }
+    });
+};
+PVServerAPI.prototype.sendFormRequest = prom.promisify(PVServerAPI.prototype.sendFormRequestAsync);
 
 
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
@@ -240,6 +301,5 @@ PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
 
 module.exports = {
     'PVServerAPI': PVServerAPI,
-    'PVServerError': PVServerError,
-    'PVFormData' : FormData
+    'PVServerError': PVServerError
 };
