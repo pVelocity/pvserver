@@ -1,6 +1,6 @@
 {
   "name": "pvserver",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "",
   "main": "pvserver.js",
   "scripts": {
