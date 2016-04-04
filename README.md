@@ -90,7 +90,6 @@ All RPM API requests must be preceded by a successful login. Below is an example
 
         // Print out the results and logout
         console.log(`Result: ${JSON.stringify(json)}\n`);
-
         return pv.logout();
 
     }).catch(pvserver.PVServerError, function(err) {
