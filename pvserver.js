@@ -322,9 +322,11 @@ PVServerAPI.prototype.sendFormRequest = prom.promisify(PVServerAPI.prototype.sen
 
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
-    var params = {
-        'User': user
-    };
+    var params = {};
+
+    if (user) {
+        params.User = user;
+    }
     if (password) {
         params.Password = password;
     }
