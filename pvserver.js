@@ -8,6 +8,58 @@ var formData = require('form-data');
 
 //====== Private Functions ====================================================================
 
+var jsonToXML = function(json) {
+
+    var resArray = [];
+
+    var emitArrayOfObjects = function(json, res) {
+
+        var emitSimple = function(elemName, value, res) {
+            res.push(`<${elemName}>`);
+            res.push(value.toString());
+            res.push(`</${elemName}>`);
+        };
+
+        var emitElement = function(elemName, subElemList, res) {
+            if (Array.isArray(subElemList)) {
+                subElemList.forEach(function(subElem) {
+                    emitElement(elemName, subElem, res);
+                });
+            } else if (typeof subElemList === 'object') {
+                var attrs = [];
+                var textValue = "";
+                if (subElemList._attrs) {
+                    for (var attrName in subElemList._attrs) {
+                        if (subElemList._attrs.hasOwnProperty(attrName)) {
+                            attrs.push(`${attrName}='${subElemList._attrs[attrName]}'`);
+                        }
+                    }
+                }
+                if (subElemList._text) {
+                    textValue = subElemList._text;
+                }
+                var attrString = attrs.length > 0 ? attrs.join(" ") : "";
+                res.push(attrs.length > 0 ? `<${elemName} ${attrString}>` : `<${elemName}>`);
+                emitArrayOfObjects(subElemList, res);
+                res.push(textValue);
+                res.push(`</${elemName}>`);
+
+            } else {
+                emitSimple(elemName, subElemList, res);
+            }
+        };
+
+        for (var key in json) {
+            if (json.hasOwnProperty(key) && key !== '_attrs' && key !== '_text') {
+                emitElement(key, json[key], res);
+            }
+        }
+    };
+
+    emitArrayOfObjects(json, resArray);
+    return resArray.join("");
+};
+
 //Get the header for an RPM API XML request as an array with optional sessionId inclusion.
 var getXmlReqHeader = function() {
     var reqHeader = ['<?xml version="1.0" encoding="utf-8"?>',
@@ -199,6 +251,11 @@ PVServerAPI.prototype.isOkay = function(code) {
 PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, completionCallback) {
 
     var server = this;
+
+    if (typeof parameters === 'object') {
+        parameters = jsonToXML(parameters);
+    }
+
     var requestStr = buildXmlReqStr.call(server, operation, parameters);
 
     var post_data = qs.stringify({
@@ -263,21 +320,22 @@ PVServerAPI.prototype.sendFormRequestAsync = function(operation, parameters, com
 };
 PVServerAPI.prototype.sendFormRequest = prom.promisify(PVServerAPI.prototype.sendFormRequestAsync);
 
-
 PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionCallback) {
 
-    var params = ['<User>', user, '</User>'];
+    var params = {
+        'User': user
+    };
     if (password) {
-        params.push('<Password>', password, '</Password>');
+        params.Password = password;
     }
     if (credKey) {
-        params.push('<CredentialKey>', credKey, '</CredentialKey>');
+        params.CredentialKey = credKey;
     }
-    params.push('<TimeOut>', this.timeOut.toString(), '</TimeOut>');
-    params.push('<DeviceName>', this.device, '</DeviceName>');
+    params.TimeOut = this.timeOut;
+    params.DeviceName = this.device;
 
     var server = this;
-    server.sendRequest("Login", params.join("")).then(function(json) {
+    server.sendRequest("Login", params).then(function(json) {
         server.user = json.PVResponse.PVStatus.User.text;
         server.role = json.PVResponse.PVStatus.UserGroup.text;
         completionCallback.call(this, null, json);
@@ -301,5 +359,6 @@ PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
 
 module.exports = {
     'PVServerAPI': PVServerAPI,
-    'PVServerError': PVServerError
+    'PVServerError': PVServerError,
+    'jsonToXML': jsonToXML
 };
