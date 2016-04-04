@@ -194,7 +194,7 @@ function PVServerAPI(urlString) {
 
     this.configPath = "/PE/DKC/";
 
-    this.device = "HTML5";
+    this.device = "iOS";
     this.sessionId = null;
     this.cookie = null;
     this.version = "3.4";
