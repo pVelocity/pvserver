@@ -14,9 +14,28 @@ var jsonToXML = function(json) {
 
     var emitArrayOfObjects = function(json, res) {
 
+        var printValue = function(v) {
+            var result = null;
+            if (typeof(v) === "function") {
+                result = "<![CDATA[";
+                result = result + v.toString();
+                result = result + "]]>";
+            } else {
+                result = v;
+                if (typeof(v) !== "string") {
+                    result = v.toString();
+                }
+                result = result.replace(/[&]/g, "&amp;");
+                result = result.replace(/[<]/g, "&lt;");
+                result = result.replace(/[>]/g, "&gt;");
+                result = result.replace(/[%]/g, "&#37;");
+            }
+            return result;
+        };
+
         var emitSimple = function(elemName, value, res) {
             res.push(`<${elemName}>`);
-            res.push(value.toString());
+            res.push(printValue(value));
             res.push(`</${elemName}>`);
         };
 
