@@ -34,9 +34,13 @@ var jsonToXML = function(json) {
         };
 
         var emitSimple = function(elemName, value, res) {
-            res.push(`<${elemName}>`);
-            res.push(printValue(value));
-            res.push(`</${elemName}>`);
+            if (value) {
+                res.push(`<${elemName}>`);
+                res.push(printValue(value));
+                res.push(`</${elemName}>`);
+            } else {
+                res.push(`<${elemName}/>`);
+            }
         };
 
         var emitElement = function(elemName, subElemList, res) {
@@ -44,7 +48,7 @@ var jsonToXML = function(json) {
                 subElemList.forEach(function(subElem) {
                     emitElement(elemName, subElem, res);
                 });
-            } else if (typeof subElemList === 'object') {
+            } else if (typeof subElemList === 'object' && subElemList !== null) {
                 var attrs = [];
                 var textValue = "";
                 if (subElemList._attrs) {
