@@ -164,6 +164,23 @@ var genRequestOptions = function(headers) {
     };
 };
 
+var stripTextNode = function(json) {
+
+    if (typeof(json) === "object") {
+        if (Object.keys(json).length == 1 && json.hasOwnProperty("text")) {
+            return json.text;
+        }
+
+        for (var key in json) {
+            if (json.hasOwnProperty(key)) {
+                json[key] = stripTextNode(json[key]);
+            }
+        }
+    }
+
+    return json;
+};
+
 var processResponse = function(res) {
     var server = this.server;
     var completionCallback = this.completionCallback;
@@ -181,13 +198,14 @@ var processResponse = function(res) {
         var json = null;
         try {
             json = JSON.parse(data);
+            json = stripTextNode(json);
         } catch (err) {
             json = data;
         }
         var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
-        code = (status && status.Code) ? status.Code.text : null;
+        code = (status && status.Code) ? status.Code : null;
         if (server.isOkay(code)) {
-            server.sessionId = status.SessionId.text;
+            server.sessionId = status.SessionId;
             if (operation === 'Login' && res.headers['set-cookie']) {
                 server.cookie = res.headers['set-cookie'];
             }
@@ -241,7 +259,7 @@ function PVServerError(code, status, json) {
 }
 
 PVServerError.prototype.message = function() {
-    return (this.status && this.status.Message && this.status.Message) ? this.status.Message.text : 'No relevant message';
+    return (this.status && this.status.Message && this.status.Message) ? this.status.Message : 'No relevant message';
 };
 
 /**
@@ -357,8 +375,8 @@ PVServerAPI.prototype.loginAsync = function(user, password, credKey, completionC
 
     var server = this;
     server.sendRequest("Login", params).then(function(json) {
-        server.user = json.PVResponse.PVStatus.User.text;
-        server.role = json.PVResponse.PVStatus.UserGroup.text;
+        server.user = json.PVResponse.PVStatus.User;
+        server.role = json.PVResponse.PVStatus.UserGroup;
         completionCallback.call(this, null, json);
     }).catch(function(err) {
         completionCallback.call(this, err, null);
