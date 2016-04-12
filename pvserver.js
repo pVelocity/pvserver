@@ -34,13 +34,11 @@ var jsonToXML = function(json) {
         };
 
         var emitSimple = function(elemName, value, res) {
+            res.push(`<${elemName}>`);
             if (value) {
-                res.push(`<${elemName}>`);
                 res.push(printValue(value));
-                res.push(`</${elemName}>`);
-            } else {
-                res.push(`<${elemName}/>`);
             }
+            res.push(`</${elemName}>`);
         };
 
         var emitElement = function(elemName, subElemList, res) {
