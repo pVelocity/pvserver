@@ -403,5 +403,6 @@ PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
 module.exports = {
     'PVServerAPI': PVServerAPI,
     'PVServerError': PVServerError,
-    'jsonToXML': jsonToXML
+    'jsonToXML': jsonToXML,
+    'Promise': prom
 };
