@@ -2,7 +2,9 @@
 
 "use strict";
 
-/*globals require: true */
+/* jshint strict: true */
+/* jshint node: true */
+/* jshint unused: true */
 
 var fs = require('fs');
 

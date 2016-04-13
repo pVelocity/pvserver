@@ -1,6 +1,8 @@
 "use strict";
 
-/*globals Buffer: true, require: true, module: true */
+/* jshint strict: true */
+/* jshint node: true */
+/* jshint unused: true */
 
 var prom = require('bluebird');
 var qs = require('querystring');
