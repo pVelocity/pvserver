@@ -30,7 +30,6 @@ var jsonToXML = function(json) {
                 result = result.replace(/[&]/g, "&amp;");
                 result = result.replace(/[<]/g, "&lt;");
                 result = result.replace(/[>]/g, "&gt;");
-                result = result.replace(/[%]/g, "&#37;");
             }
             return result;
         };
