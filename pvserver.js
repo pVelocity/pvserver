@@ -60,6 +60,9 @@ var jsonToXML = function(json) {
                 if (subElemList._text) {
                     textValue = subElemList._text;
                 }
+                else if (subElemList.text) {
+                    textValue = subElemList.text;
+                }
                 var attrString = attrs.length > 0 ? attrs.join(" ") : "";
                 res.push(attrs.length > 0 ? `<${elemName} ${attrString}>` : `<${elemName}>`);
                 emitArrayOfObjects(subElemList, res);
@@ -72,7 +75,7 @@ var jsonToXML = function(json) {
         };
 
         for (var key in json) {
-            if (json.hasOwnProperty(key) && key !== '_attrs' && key !== '_text') {
+            if (json.hasOwnProperty(key) && key !== '_attrs' && key !== '_text' && key !== 'text') {
                 emitElement(key, json[key], res);
             }
         }
