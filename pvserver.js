@@ -25,7 +25,9 @@ var jsonToXML = function(json) {
             } else {
                 result = v;
                 if (typeof(v) !== "string") {
-                    result = v.toString();
+                    if (v !== null) {
+                        result = v.toString();
+                    }
                 }
                 result = result.replace(/[&]/g, "&amp;");
                 result = result.replace(/[<]/g, "&lt;");
@@ -36,9 +38,7 @@ var jsonToXML = function(json) {
 
         var emitSimple = function(elemName, value, res) {
             res.push(`<${elemName}>`);
-            if (value) {
-                res.push(printValue(value));
-            }
+            res.push(printValue(value));
             res.push(`</${elemName}>`);
         };
 
