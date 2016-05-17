@@ -25,8 +25,11 @@ var jsonToXML = function(json) {
             } else {
                 result = v;
                 if (typeof(v) !== "string") {
-                    if (v !== null) {
+                    if (v !== null && typeof(v) !== 'undefined') {
                         result = v.toString();
+                    }
+                    else {
+                        result = "";
                     }
                 }
                 result = result.replace(/[&]/g, "&amp;");
