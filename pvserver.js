@@ -27,8 +27,7 @@ var jsonToXML = function(json) {
                 if (typeof(v) !== "string") {
                     if (v !== null && typeof(v) !== 'undefined') {
                         result = v.toString();
-                    }
-                    else {
+                    } else {
                         result = "";
                     }
                 }
@@ -62,8 +61,7 @@ var jsonToXML = function(json) {
                 }
                 if (subElemList._text) {
                     textValue = subElemList._text;
-                }
-                else if (subElemList.text) {
+                } else if (subElemList.text) {
                     textValue = subElemList.text;
                 }
                 var attrString = attrs.length > 0 ? attrs.join(" ") : "";
@@ -214,9 +212,9 @@ var processResponse = function(res) {
         var status = (json && json.PVResponse) ? json.PVResponse.PVStatus : null;
         code = (status && status.Code) ? status.Code : null;
         if (server.isOkay(code)) {
-            server.sessionId = status.SessionId;
             if (operation === 'Login' && res.headers['set-cookie']) {
                 server.cookie = res.headers['set-cookie'];
+                server.sessionId = status.SessionId;
             }
             code = null;
         } else {
