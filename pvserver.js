@@ -61,6 +61,8 @@ var jsonToXML = function(json) {
                 }
                 if (subElemList._text) {
                     textValue = subElemList._text;
+                } else if (subElemList._cdata) {
+                    textValue = `<![CDATA[${subElemList._cdata}]]>`;
                 } else if (subElemList.text) {
                     textValue = subElemList.text;
                 }
@@ -76,7 +78,7 @@ var jsonToXML = function(json) {
         };
 
         for (var key in json) {
-            if (json.hasOwnProperty(key) && key !== '_attrs' && key !== '_text' && key !== 'text') {
+            if (json.hasOwnProperty(key) && key !== '_attrs' && key !== '_cdata' && key !== '_text' && key !== 'text') {
                 emitElement(key, json[key], res);
             }
         }
