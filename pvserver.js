@@ -280,7 +280,10 @@ PVServerError.prototype.message = function() {
  *            true if it is okay, false otherwise
  */
 PVServerAPI.prototype.isOkay = function(code) {
-    return (code === "RPM_PE_STATUS_OK");
+    var validCodes = ['RPM_PE_STATUS_OK', 'RPM_PE_QUERY_RESULT_TRUNCATED',
+        'RPM_PE_QUERY_RESULT_OK_UPSERT_IN_PROGRESS', 'RPM_PE_QUERY_RESULT_TRUNCATED_UPSERT_IN_PROGRESS'
+    ];
+    return (validCodes.indexOf(code) > -1);
 };
 
 /**
