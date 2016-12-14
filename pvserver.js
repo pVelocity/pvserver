@@ -7,6 +7,7 @@
 var prom = require('bluebird');
 var qs = require('querystring');
 var formData = require('form-data');
+var url = require('url');
 
 //====== Private Functions ====================================================================
 
@@ -124,7 +125,6 @@ var buildXmlReqStr = function(operation, parameters) {
 var setHostURL = function(urlString) {
     var refUrl = urlString;
     if (typeof urlString === "string") {
-        var url = require('url');
         refUrl = url.parse(urlString);
     }
 
@@ -407,6 +407,66 @@ PVServerAPI.prototype.logout = function(completionCallback) {
     });
 };
 PVServerAPI.prototype.logout = prom.promisify(PVServerAPI.prototype.logout);
+
+PVServerAPI.prototype.getHTML5ShareLink = function(html5loginContext, completionCallback) {
+
+    try {
+        var refUrl = url.parse(html5loginContext.html5UrlBasePath);
+
+        var endWithSlash = (refUrl.pathname && refUrl.pathname.length > 0 &&
+            refUrl.pathname.substr(refUrl.pathname.length - 1) === "/");
+
+        var appName = refUrl.pathname.split('/')[1];
+
+        var post_data = qs.stringify({});
+        var reqOptions = {
+            host: refUrl.hostname,
+            port: refUrl.port,
+            path: refUrl.pathname + (endWithSlash ? "" : "/") + "WORKFLOW_GET_SHARE_LINK",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': Buffer.byteLength(post_data),
+                'Connection': 'Keep-Alive',
+                'X-PVClient-Version': this.version,
+                "X-PVClient-Platform": this.device,
+                'Cookie': `APP_SHARED_SESSION_ID-${appName}=${html5loginContext.html5SessionId}`
+            }
+        };
+
+        var post = this.http.request(reqOptions, (res) => {
+            var data = "";
+            res.setEncoding('utf8');
+
+            res.on('data', function(chunk) {
+                data += chunk;
+            }.bind(this));
+
+            res.on('end', function() {
+                var json = JSON.parse(data);
+                completionCallback.call(this, null, json);
+            }.bind(this));
+
+            res.on('error', function(err) {
+                completionCallback.call(this, err, null);
+            }.bind(this));
+        });
+
+        post.on('error', function(err) {
+            completionCallback.call(this, err, null);
+        }.bind(this));
+
+        post.write(post_data);
+        post.end();
+
+    } catch (err) {
+
+        completionCallback.call(this, err, null);
+
+    }
+};
+PVServerAPI.prototype.getHTML5ShareLink = prom.promisify(PVServerAPI.prototype.getHTML5ShareLink);
+
 
 module.exports = {
     'PVServerAPI': PVServerAPI,

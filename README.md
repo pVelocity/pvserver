@@ -132,6 +132,32 @@ Login to the application server with the ``user_id`` using either the ``password
 
 Logout of the application server. The ``PVServerAPI`` instance can be reused again by calling ``login``.
 
+###``getHTML5ShareLink(html5loginContext)``
+
+This function is only applicable to JSAPI2 functions. Use this function to request a shared URL that represents the current workflow of a given HTML5 user session from the pVelocity HTML5 server. Below is a sample usage provided in a form of an JSAPI2 function:
+
+```js
+
+function(params, callback) {
+
+    var pv = new this.pvserver.PVServerAPI(this.PVSession.engineSessionInfo.url);
+
+    pv.getHTML5ShareLink(this.PVSession.engineSessionInfo.html5loginContext).then(function(json) {
+
+        var link = json.sharingUrl;
+
+        callback(null, {'link': link});
+
+    }).catch(function(err) {
+
+        callback(err);
+
+    });
+
+};
+
+```
+
 ##License
 
 Copyright (c) 2016, pVelocity Inc
