@@ -434,7 +434,9 @@ PVServerAPI.prototype.getHTML5ShareLink = function(html5loginContext, completion
             }
         };
 
-        var post = this.http.request(reqOptions, (res) => {
+        var http = (refUrl.protocol === 'http:') ? require('http') : require('https');
+
+        var post = http.request(reqOptions, (res) => {
             var data = "";
             res.setEncoding('utf8');
 
