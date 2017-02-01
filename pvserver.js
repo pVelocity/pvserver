@@ -416,7 +416,7 @@ PVServerAPI.prototype.getHTML5ShareLink = function(html5loginContext, completion
         var endWithSlash = (refUrl.pathname && refUrl.pathname.length > 0 &&
             refUrl.pathname.substr(refUrl.pathname.length - 1) === "/");
 
-        var appName = refUrl.pathname.split('/')[1];
+        var appName = html5loginContext.html5AppName;
 
         var post_data = qs.stringify({});
         var reqOptions = {
