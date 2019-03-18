@@ -158,6 +158,24 @@ function(params, callback) {
 
 ```
 
+###``refreshWorkflow(html5loginContext)``
+
+This function is only applicable to JSAPI2 functions. Use this function to request a workflow refresh on workflows that is being viewed by the HTML5 user session. This is similar to pressing the refresh button on all opened browser window or tabs with the same user session. Note that the engine session must be established by the HTML5 server for this function to work properly. Below is a sample usage provided in a form of an JSAPI2 function:
+
+```js
+
+function(params, callback) {
+
+    var pv = new this.pvserver.PVServerAPI(this.PVSession.engineSessionInfo.url);
+    pv.refreshWorkflow(this.PVSession.engineSessionInfo.html5loginContext);
+
+    // The function returns an empty object '{}'
+    callback(null);
+
+};
+
+```
+
 ##License
 
 Copyright (c) 2016, pVelocity Inc
