@@ -419,6 +419,8 @@ const callHTML5PostOperation = function(html5loginContext, completionCallback, o
         refUrl.pathname.substr(refUrl.pathname.length - 1) === "/");
 
     var appName = html5loginContext.html5AppName;
+    var endpoint = html5loginContext.html5Endpoint;
+    var appSharedSession = typeof(endpoint) === "string" ? endpoint : appName;
 
     var post_data = qs.stringify({});
     var reqOptions = {
@@ -432,7 +434,7 @@ const callHTML5PostOperation = function(html5loginContext, completionCallback, o
             'Connection': 'Keep-Alive',
             'X-PVClient-Version': this.version,
             "X-PVClient-Platform": this.device,
-            'Cookie': `APP_SHARED_SESSION_ID-${appName}=${html5loginContext.html5SessionId}`
+            'Cookie': `APP_SHARED_SESSION_ID-${appSharedSession}=${html5loginContext.html5SessionId}`
         }
     };
 
