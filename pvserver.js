@@ -307,10 +307,10 @@ PVServerAPI.prototype.sendRequestAsync = function(operation, parameters, complet
 
     var requestStr = buildXmlReqStr.call(server, operation, parameters);
 
-    var post_data = qs.stringify({
+    var post_data = new URLSearchParams({
         "dataformat": "json",
         "request": requestStr
-    });
+    }).toString();
 
     var headers = genHeaders.call(server, post_data);
     var reqOptions = genRequestOptions.call(server, headers);
@@ -422,7 +422,7 @@ const callHTML5PostOperation = function(html5loginContext, completionCallback, o
     var endpoint = html5loginContext.html5Endpoint;
     var appSharedSession = typeof(endpoint) === "string" ? endpoint : appName;
 
-    var post_data = qs.stringify({});
+    var post_data = new URLSearchParams({}).toString();
     var reqOptions = {
         host: refUrl.hostname,
         port: refUrl.port,
