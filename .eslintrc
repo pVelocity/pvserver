@@ -1,0 +1,32 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2017,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "jquery": true,
+    "es6": true
+  },
+  "rules": {
+    "semi": 1,
+    "comma-dangle": 0,
+    "no-unsed-var": 0,
+    "guard-for-in": 0,
+    "prefer-const": 0,
+    "no-unused-vars": 1,
+    "max-len": ["error",
+      {
+        "code": 120,
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreRegExpLiterals": true
+      }
+    ],
+    "eol-last": 0
+  }
+}
